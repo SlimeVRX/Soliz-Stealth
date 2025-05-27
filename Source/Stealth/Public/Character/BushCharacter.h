@@ -4,18 +4,26 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/Character.h"
-#include "StealthPlayerCharacter.generated.h"
+#include "BushCharacter.generated.h"
 
-class ABushActor;
-
+/**
+ * Character with bush system support
+ */
 UCLASS()
-class STEALTH_API AStealthPlayerCharacter : public ACharacter
+class STEALTH_API ABushCharacter : public ACharacter
 {
 	GENERATED_BODY()
 
 public:
 	// Sets default values for this character's properties
-	AStealthPlayerCharacter();
+	ABushCharacter();
+
+	// Getters
+	UFUNCTION(BlueprintPure, Category = "Bush System")
+	bool IsInBush() const;
+    
+	UFUNCTION(BlueprintPure, Category = "Bush System")
+	int32 GetCurrentBushID() const;
 
 protected:
 	// Called when the game starts or when spawned
