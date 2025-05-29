@@ -22,7 +22,7 @@ struct FBushPlayerSet
  * 
  */
 UCLASS()
-class STEALTH_API ABushGameMode : public AGameModeBase
+class STEALTHBUSH_API ABushGameMode : public AGameModeBase
 {
 	GENERATED_BODY()
 

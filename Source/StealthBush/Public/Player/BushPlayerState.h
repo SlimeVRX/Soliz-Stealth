@@ -10,7 +10,7 @@
  * Player state with bush system data
  */
 UCLASS()
-class STEALTH_API ABushPlayerState : public APlayerState
+class STEALTHBUSH_API ABushPlayerState : public APlayerState
 {
     GENERATED_BODY()
 

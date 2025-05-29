@@ -9,7 +9,7 @@
 class UBoxComponent;
 
 UCLASS()
-class STEALTH_API ABushVolume : public AActor
+class STEALTHBUSH_API ABushVolume : public AActor
 {
 	GENERATED_BODY()
 	

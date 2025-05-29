@@ -2,9 +2,9 @@
 
 using UnrealBuildTool;
 
-public class Stealth : ModuleRules
+public class StealthBush : ModuleRules
 {
-	public Stealth(ReadOnlyTargetRules Target) : base(Target)
+	public StealthBush(ReadOnlyTargetRules Target) : base(Target)
 	{
 		PCHUsage = PCHUsageMode.UseExplicitOrSharedPCHs;
 	

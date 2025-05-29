@@ -12,7 +12,7 @@ class ABushCharacter;
  * Player controller with bush visibility system support
  */
 UCLASS()
-class STEALTH_API ABushPlayerController : public APlayerController
+class STEALTHBUSH_API ABushPlayerController : public APlayerController
 {
     GENERATED_BODY()
 

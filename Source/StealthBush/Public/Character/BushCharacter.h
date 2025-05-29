@@ -10,7 +10,7 @@
  * Character with bush system support
  */
 UCLASS()
-class STEALTH_API ABushCharacter : public ACharacter
+class STEALTHBUSH_API ABushCharacter : public ACharacter
 {
 	GENERATED_BODY()
 

@@ -3,13 +3,13 @@
 using UnrealBuildTool;
 using System.Collections.Generic;
 
-public class StealthEditorTarget : TargetRules
+public class StealthBushEditorTarget : TargetRules
 {
-	public StealthEditorTarget(TargetInfo Target) : base(Target)
+	public StealthBushEditorTarget(TargetInfo Target) : base(Target)
 	{
 		Type = TargetType.Editor;
 		DefaultBuildSettings = BuildSettingsVersion.V5;
 
-		ExtraModuleNames.AddRange( new string[] { "Stealth" } );
+		ExtraModuleNames.AddRange( new string[] { "StealthBush" } );
 	}
 }
