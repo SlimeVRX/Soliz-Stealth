@@ -19,16 +19,6 @@ class STEALTHBUSH_API ABushCharacter : public ACharacter
 public:
 	// Sets default values for this character's properties
 	ABushCharacter();
-	
-	// Getters
-	UFUNCTION(BlueprintPure, Category = "Bush System")
-	bool IsInBush() const { return CurrentBush != nullptr; }
-	
-	UFUNCTION(BlueprintPure, Category = "Bush System")
-	ABushVolume* GetCurrentBush() const { return CurrentBush; }
-
-	// Setters (Server only)
-	void SetCurrentBush(ABushVolume* NewBush);
 
 protected:
 	// Called when the game starts or when spawned
@@ -46,5 +36,18 @@ protected:
     
 	UFUNCTION()
 	void OnOverlapEnd(UPrimitiveComponent* OverlappedComp, AActor* OtherActor, 
-					UPrimitiveComponent* OtherComp, int32 OtherBodyIndex)
+					UPrimitiveComponent* OtherComp, int32 OtherBodyIndex);
+
+public:
+	// Getters
+	UFUNCTION(BlueprintPure, Category = "Bush System")
+	bool IsInBush() const { return CurrentBush != nullptr; }
+	
+	UFUNCTION(BlueprintPure, Category = "Bush System")
+	ABushVolume* GetCurrentBush() const { return CurrentBush; }
+
+	// Setters (Server only)
+	void SetCurrentBush(ABushVolume* NewBush);
+
+	void SetCharacterVisibility(bool bShouldBeHidden);
 };

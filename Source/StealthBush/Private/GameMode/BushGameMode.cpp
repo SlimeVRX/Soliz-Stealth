@@ -9,18 +9,23 @@
 
 ABushGameMode::ABushGameMode()
 {
-	// Đảm bảo GameMode chỉ tồn tại trên Server
-	bReplicates = false;
+	PlayerControllerClass = ABushPlayerController::StaticClass();
+	DefaultPawnClass = ABushCharacter::StaticClass();
 }
 
 void ABushGameMode::RegisterBushVolume(ABushVolume* BushVolume)
 {
-	if (!HasAuthority() || !BushVolume) return;
-    
-	BushVolumes.AddUnique(BushVolume);
-	UE_LOG(LogTemp, Log, TEXT("Server: Registered Bush Volume %s"), *BushVolume->GetName());
+	// This function should only be called on the server
+	if (!HasAuthority()) return;
+
+	if (BushVolume && !BushVolumes.Contains(BushVolume))
+	{
+		BushVolumes.Add(BushVolume);
+		UE_LOG(LogTemp, Warning, TEXT("Server: Registered BushVolume: %s. Total registered: %d"), *BushVolume->GetName(), BushVolumes.Num());
+	}
 }
 
+/*
 void ABushGameMode::UpdateVisibilityForPlayerEnterBush(ABushCharacter* AffectedPlayer, ABushVolume* AffectedBush)
 {
 	if (!HasAuthority() || !AffectedPlayer || !AffectedBush) return;
@@ -198,8 +203,9 @@ void ABushGameMode::UpdateVisibilityForPlayerExitBush(ABushCharacter* AffectedPl
     
     UE_LOG(LogTemp, Warning, TEXT("PSERVER: Visibility update complete for player exiting bush"));
 }
+*/
 
-void ABushGameMode::HandlePlayerEnteredBush(ABushCharacter* AffectedPlayer, ABushVolume* AffectedBush)
+/*void ABushGameMode::HandlePlayerEnteredBush(ABushCharacter* AffectedPlayer, ABushVolume* AffectedBush)
 {
 	if (!AffectedPlayer || !AffectedBush) 
 	{
@@ -215,9 +221,24 @@ void ABushGameMode::HandlePlayerEnteredBush(ABushCharacter* AffectedPlayer, ABus
     
 	// Cập nhật visibility
 	UpdateVisibilityForPlayerEnterBush(AffectedPlayer, AffectedBush);
+}*/
+
+void ABushGameMode::HandlePlayerEnteredBush(ABushCharacter* PlayerCharacter, ABushVolume* Bush)
+{
+	// This function is called on the server when a player reports entering a bush
+	if (!HasAuthority() || !PlayerCharacter || !Bush) return;
+
+	UE_LOG(LogTemp, Warning, TEXT("Server: GameMode handling %s entering bush %s"), *PlayerCharacter->GetName(), *Bush->GetName());
+
+	// 1. Update the server-authoritative state of the character and the bush
+	PlayerCharacter->SetCurrentBush(Bush); // Update character's bush pointer on server
+	Bush->AddPlayerToBush(PlayerCharacter);       // Add player to bush's list on server
+
+	// 2. Recalculate and update visibility for all relevant players
+	UpdateAllPlayerVisibilities();
 }
 
-void ABushGameMode::HandlePlayerExitedBush(ABushCharacter* AffectedPlayer, ABushVolume* AffectedBush)
+/*void ABushGameMode::HandlePlayerExitedBush(ABushCharacter* AffectedPlayer, ABushVolume* AffectedBush)
 {
 	if (!AffectedPlayer || !AffectedBush) return;
 
@@ -231,9 +252,24 @@ void ABushGameMode::HandlePlayerExitedBush(ABushCharacter* AffectedPlayer, ABush
 	}
 
 	UpdateVisibilityForPlayerExitBush(AffectedPlayer);
+}*/
+
+void ABushGameMode::HandlePlayerExitedBush(ABushCharacter* PlayerCharacter, ABushVolume* Bush)
+{
+	// This function is called on the server when a player reports exiting a bush
+	if (!HasAuthority() || !PlayerCharacter || !Bush) return;
+
+	UE_LOG(LogTemp, Warning, TEXT("Server: GameMode handling %s exiting bush %s"), *PlayerCharacter->GetName(), *Bush->GetName());
+
+	// 1. Update the server-authoritative state of the character and the bush
+	PlayerCharacter->SetCurrentBush(nullptr); // Update character's bush pointer on server
+	Bush->RemovePlayerFromBush(PlayerCharacter);     // Remove player from bush's list on server
+
+	// 2. Recalculate and update visibility for all relevant players
+	UpdateAllPlayerVisibilities();
 }
 
-
+/*
 bool ABushGameMode::CanPlayersSeeEachOther(ABushCharacter* Viewer, ABushCharacter* Target) const
 {
 	if (!Viewer || !Target) 
@@ -277,7 +313,9 @@ bool ABushGameMode::CanPlayersSeeEachOther(ABushCharacter* Viewer, ABushCharacte
 	UE_LOG(LogTemp, Verbose, TEXT("SERVER: Visibility Rule - Different bushes = CANNOT SEE"));
 	return false;
 }
+*/
 
+/*
 void ABushGameMode::UpdateVisibilityBetweenPlayers(ABushCharacter* Viewer, ABushCharacter* Target)
 {
 	if (!HasAuthority() || !Viewer || !Target || Viewer == Target) return;
@@ -296,6 +334,107 @@ void ABushGameMode::UpdateVisibilityBetweenPlayers(ABushCharacter* Viewer, ABush
 			   bCanSee ? TEXT("VISIBLE") : TEXT("HIDDEN"));
 	}
 }
+*/
+
+void ABushGameMode::UpdateAllPlayerVisibilities()
+{
+	// This function recalculates visibility for ALL players and sends necessary updates.
+	// This might be inefficient for large numbers of players/bushes; optimization would involve
+	// only updating players affected by the change (e.g., players near the entered/exited bush,
+	// and the entering/exiting player themselves).
+	if (!HasAuthority()) return; // Only run on server
+
+	TArray<AActor*> PlayerActors;
+	UGameplayStatics::GetAllActorsOfClass(GetWorld(), ABushCharacter::StaticClass(), PlayerActors);
+
+	TArray<ABushCharacter*> AllCharacters;
+	for (AActor* PlayerActor : PlayerActors)
+	{
+		if (ABushCharacter* Char = Cast<ABushCharacter>(PlayerActor))
+		{
+			AllCharacters.Add(Char);
+		}
+	}
+
+	// Iterate through every pair of players (Viewer and Target)
+	for (ABushCharacter* Viewer : AllCharacters)
+	{
+		if (!Viewer || !Viewer->GetController()) continue;
+
+		ABushPlayerController* ViewerPC = Cast<ABushPlayerController>(Viewer->GetController());
+		if (!ViewerPC) continue;
+
+		for (ABushCharacter* Target : AllCharacters)
+		{
+			if (!Target) continue;
+
+			// A player should always see themselves
+			bool bShouldBeHiddenToViewer = (Viewer != Target) && !CanPlayersSeeEachOther(Viewer, Target);
+
+			// Send the visibility update to the Viewer's client
+			SendVisibilityUpdate(ViewerPC, Target, bShouldBeHiddenToViewer);
+		}
+	}
+}
+
+bool ABushGameMode::CanPlayersSeeEachOther(ABushCharacter* ViewerCharacter, ABushCharacter* TargetCharacter) const
+{
+	// --- CORE STEALTH LOGIC GOES HERE ---
+	// This is a placeholder implementation. Implement your actual game rules here.
+	// Examples of rules:
+	// - If TargetCharacter is in ANY bush, ViewerCharacter cannot see them unless ViewerCharacter is also in the SAME bush.
+	// - If ViewerCharacter is in a bush, they cannot see anyone outside.
+	// - If neither is in a bush, they see each other.
+	// - Line of sight checks, distance checks, specific bush types, etc.
+
+	if (!ViewerCharacter || !TargetCharacter || ViewerCharacter == TargetCharacter)
+	{
+		// A character always sees themselves. Invalid inputs.
+		return true;
+	}
+
+	bool bViewerIsInBush = ViewerCharacter->IsInBush(); // IsInBush is accurate on server
+	ABushVolume* ViewerBush = ViewerCharacter->GetCurrentBush(); // GetCurrentBush is accurate on server
+
+	bool bTargetIsInBush = TargetCharacter->IsInBush(); // IsInBush is accurate on server
+	ABushVolume* TargetBush = TargetCharacter->GetCurrentBush(); // GetCurrentBush is accurate on server
 
 
+	// Example Rule:
+	// - If Target is in ANY bush, AND Viewer is NOT in the SAME bush, Target is hidden from Viewer.
+	// - Otherwise, Target is visible to Viewer.
+	if (bTargetIsInBush)
+	{
+		// Target is in a bush
+		if (bViewerIsInBush && ViewerBush == TargetBush)
+		{
+			// Viewer is in the SAME bush -> Viewer CAN see Target
+			return true;
+		}
+		else
+		{
+			// Viewer is NOT in the SAME bush (either in a different bush or outside)
+			// -> Viewer CANNOT see Target
+			return false; // Target should be hidden
+		}
+	}
+	else
+	{
+		// Target is NOT in a bush -> Viewer CAN always see Target (assuming no other rules like distance/LOS)
+		return true; // Target is visible
+	}
 
+	// Add more complex rules as needed, e.g., line of sight, distance, etc.
+}
+
+void ABushGameMode::SendVisibilityUpdate(APlayerController* ReceivingPC, ABushCharacter* TargetCharacter, bool bShouldBeHidden)
+{
+	if (!ReceivingPC || !TargetCharacter) return;
+
+	// Cast the PlayerController to our custom BushPlayerController
+	if (ABushPlayerController* BushPC = Cast<ABushPlayerController>(ReceivingPC))
+	{
+		// Call the Client RPC on this PlayerController's instance on the target client
+		BushPC->Client_UpdateCharacterVisibility(TargetCharacter, bShouldBeHidden);
+	}
+}

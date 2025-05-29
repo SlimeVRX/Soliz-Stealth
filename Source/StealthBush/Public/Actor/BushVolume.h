@@ -20,8 +20,9 @@ public:
 
 	// Bush management
 	void AddPlayerToBush(ABushCharacter* Player);
+	
 	void RemovePlayerFromBush(ABushCharacter* Player);
-
+	
 protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
@@ -30,7 +31,11 @@ protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
 	TObjectPtr<UBoxComponent> CollisionBox;
 
-	// Collection of players currently in this bush
-	UPROPERTY()
-	TSet<ABushCharacter*> PlayersInBush;
+	/** List of players currently inside this bush volume (Server authoritative) */
+	UPROPERTY() // Not Replicated - Server authoritative list
+	TArray<ABushCharacter*> PlayersInBush;
+	
+public:
+	/** Returns the list of players currently inside this bush (Server only) */
+	const TArray<ABushCharacter*>& GetPlayersInBush() const { return PlayersInBush; }
 };
