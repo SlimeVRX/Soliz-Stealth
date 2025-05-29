@@ -20,4 +20,11 @@ public:
     // Client RPC - Server sends visibility commands
     UFUNCTION(Client, Reliable)
     void Client_UpdateCharacterVisibility(ABushCharacter* TargetCharacter, bool bShouldHide);
+    
+    // Server RPC - Client reports bush entry/exit
+    UFUNCTION(Server, Reliable)
+    void Server_ReportEnteredBush(ABushVolume* Bush);
+    
+    UFUNCTION(Server, Reliable)
+    void Server_ReportExitedBush(ABushVolume* Bush);
 };

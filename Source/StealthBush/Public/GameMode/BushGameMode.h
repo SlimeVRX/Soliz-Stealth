@@ -26,6 +26,10 @@ public:
 	// Visibility calculation
 	auto UpdateVisibilityForPlayerEnterBush(ABushCharacter* AffectedPlayer, ABushVolume* AffectedBush) -> void;
 	void UpdateVisibilityForPlayerExitBush(ABushCharacter* AffectedPlayer);
+
+	void HandlePlayerEnteredBush(ABushCharacter* AffectedPlayer, ABushVolume* AffectedBush);
+	void HandlePlayerExitedBush(ABushCharacter* AffectedPlayer, ABushVolume* AffectedBush);
+	
 	
 private:
 	// Collection of all bush volumes

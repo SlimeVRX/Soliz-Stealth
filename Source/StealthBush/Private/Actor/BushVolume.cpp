@@ -44,10 +44,6 @@ void ABushVolume::RemovePlayerFromBush(ABushCharacter* Player)
 void ABushVolume::BeginPlay()
 {
 	Super::BeginPlay();
-
-	// Register overlap events
-	CollisionBox->OnComponentBeginOverlap.AddDynamic(this, &ABushVolume::OnOverlapBegin);
-	CollisionBox->OnComponentEndOverlap.AddDynamic(this, &ABushVolume::OnOverlapEnd);
     
 	// Register with GameMode (Server only)
 	if (HasAuthority())
@@ -56,61 +52,6 @@ void ABushVolume::BeginPlay()
 		{
 			GameMode->RegisterBushVolume(this);
 		}
-	}
-}
-
-void ABushVolume::OnOverlapBegin(UPrimitiveComponent* OverlappedComp, AActor* OtherActor,
-	UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
-{
-	// Only detect on server
-	if (!HasAuthority()) return;
-    
-	if (ABushCharacter* BushChar = Cast<ABushCharacter>(OtherActor))
-	{
-		// Add player to bush
-		AddPlayerToBush(BushChar);
-        
-		// Update player's current bush
-		BushChar->SetCurrentBush(this);
-
-		// Recalculate visibility
-		// Notify GameMode to recalculate visibility for this bush
-		if (ABushGameMode* GameMode = GetWorld()->GetAuthGameMode<ABushGameMode>())
-		{
-			GameMode->UpdateVisibilityForPlayerEnterBush(BushChar, this);
-		}
-        
-		UE_LOG(LogTemp, Log, TEXT("Server: Player %s entered Bush %s"), 
-			   *BushChar->GetName(), *GetName());
-	}
-}
-
-void ABushVolume::OnOverlapEnd(UPrimitiveComponent* OverlappedComp, AActor* OtherActor, UPrimitiveComponent* OtherComp,
-	int32 OtherBodyIndex)
-{
-	// Only detect on server
-	if (!HasAuthority()) return;
-    
-	if (ABushCharacter* BushChar = Cast<ABushCharacter>(OtherActor))
-	{
-		// Remove player from bush
-		RemovePlayerFromBush(BushChar);
-        
-		// Clear player's current bush if it's this bush
-		if (BushChar->GetCurrentBush() == this)
-		{
-			BushChar->SetCurrentBush(nullptr);
-		}
-        
-		// Recalculate visibility
-		// Notify GameMode to recalculate visibility for this bush
-		if (ABushGameMode* GameMode = GetWorld()->GetAuthGameMode<ABushGameMode>())
-		{
-			GameMode->UpdateVisibilityForPlayerExitBush(BushChar);
-		}
-        
-		UE_LOG(LogTemp, Log, TEXT("Server: Player %s exited Bush %s"), 
-			   *BushChar->GetName(), *GetName());
 	}
 }
 

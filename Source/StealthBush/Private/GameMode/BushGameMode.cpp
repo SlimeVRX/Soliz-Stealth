@@ -25,7 +25,7 @@ void ABushGameMode::UpdateVisibilityForPlayerEnterBush(ABushCharacter* AffectedP
 {
 	if (!HasAuthority() || !AffectedPlayer || !AffectedBush) return;
     
-    UE_LOG(LogTemp, Warning, TEXT("SERVER: Updating visibility for player %s entering bush %s"), 
+    UE_LOG(LogTemp, Warning, TEXT("PSERVER: Updating visibility for player %s entering bush %s"), 
            *AffectedPlayer->GetName(), *AffectedBush->GetName());
     
     // Lấy tất cả người chơi trong game
@@ -66,14 +66,14 @@ void ABushGameMode::UpdateVisibilityForPlayerEnterBush(ABushCharacter* AffectedP
     for (ABushCharacter* OutsidePlayer : PlayersOutsideBush)
     {
         PlayerPC->Client_UpdateCharacterVisibility(OutsidePlayer, false); // Hiện
-        UE_LOG(LogTemp, Verbose, TEXT("SERVER: Player %s CAN SEE outside player %s"), 
+        UE_LOG(LogTemp, Warning, TEXT("PSERVER: Player %s CAN SEE outside player %s"), 
                *AffectedPlayer->GetName(), *OutsidePlayer->GetName());
     }
     
     for (ABushCharacter* SameBushPlayer : PlayersInSameBush)
     {
         PlayerPC->Client_UpdateCharacterVisibility(SameBushPlayer, false); // Hiện
-        UE_LOG(LogTemp, Verbose, TEXT("SERVER: Player %s CAN SEE same bush player %s"), 
+        UE_LOG(LogTemp, Warning, TEXT("PSERVER: Player %s CAN SEE same bush player %s"), 
                *AffectedPlayer->GetName(), *SameBushPlayer->GetName());
     }
     
@@ -81,7 +81,7 @@ void ABushGameMode::UpdateVisibilityForPlayerEnterBush(ABushCharacter* AffectedP
     for (ABushCharacter* OtherBushPlayer : PlayersInOtherBushes)
     {
         PlayerPC->Client_UpdateCharacterVisibility(OtherBushPlayer, true); // Ẩn
-        UE_LOG(LogTemp, Verbose, TEXT("SERVER: Player %s CANNOT SEE other bush player %s"), 
+        UE_LOG(LogTemp, Warning, TEXT("PSERVER: Player %s CANNOT SEE other bush player %s"), 
                *AffectedPlayer->GetName(), *OtherBushPlayer->GetName());
     }
     
@@ -92,7 +92,7 @@ void ABushGameMode::UpdateVisibilityForPlayerEnterBush(ABushCharacter* AffectedP
         if (ABushPlayerController* OtherPC = Cast<ABushPlayerController>(SameBushPlayer->GetController()))
         {
             OtherPC->Client_UpdateCharacterVisibility(AffectedPlayer, false); // Hiện
-            UE_LOG(LogTemp, Verbose, TEXT("SERVER: Same bush player %s CAN SEE Player %s"), 
+            UE_LOG(LogTemp, Warning, TEXT("PSERVER: Same bush player %s CAN SEE Player %s"), 
                    *SameBushPlayer->GetName(), *AffectedPlayer->GetName());
         }
     }
@@ -103,7 +103,7 @@ void ABushGameMode::UpdateVisibilityForPlayerEnterBush(ABushCharacter* AffectedP
         if (ABushPlayerController* OtherPC = Cast<ABushPlayerController>(OutsidePlayer->GetController()))
         {
             OtherPC->Client_UpdateCharacterVisibility(AffectedPlayer, true); // Ẩn
-            UE_LOG(LogTemp, Verbose, TEXT("SERVER: Outside player %s CANNOT SEE Player %s"), 
+            UE_LOG(LogTemp, Warning, TEXT("PSERVER: Outside player %s CANNOT SEE Player %s"), 
                    *OutsidePlayer->GetName(), *AffectedPlayer->GetName());
         }
     }
@@ -114,19 +114,19 @@ void ABushGameMode::UpdateVisibilityForPlayerEnterBush(ABushCharacter* AffectedP
         if (ABushPlayerController* OtherPC = Cast<ABushPlayerController>(OtherBushPlayer->GetController()))
         {
             OtherPC->Client_UpdateCharacterVisibility(AffectedPlayer, true); // Ẩn
-            UE_LOG(LogTemp, Verbose, TEXT("SERVER: Other bush player %s CANNOT SEE Player %s"), 
+            UE_LOG(LogTemp, Warning, TEXT("PSERVER: Other bush player %s CANNOT SEE Player %s"), 
                    *OtherBushPlayer->GetName(), *AffectedPlayer->GetName());
         }
     }
     
-    UE_LOG(LogTemp, Warning, TEXT("SERVER: Visibility update complete for player entering bush"));
+    UE_LOG(LogTemp, Warning, TEXT("PSERVER: Visibility update complete for player entering bush"));
 }
 
 void ABushGameMode::UpdateVisibilityForPlayerExitBush(ABushCharacter* AffectedPlayer)
 {
 	if (!HasAuthority() || !AffectedPlayer) return;
     
-    UE_LOG(LogTemp, Warning, TEXT("SERVER: Updating visibility for player %s exiting bush"), 
+    UE_LOG(LogTemp, Warning, TEXT("PSERVER: Updating visibility for player %s exiting bush"), 
            *AffectedPlayer->GetName());
     
     // Lấy tất cả người chơi trong game
@@ -162,7 +162,7 @@ void ABushGameMode::UpdateVisibilityForPlayerExitBush(ABushCharacter* AffectedPl
     for (ABushCharacter* OutsidePlayer : PlayersOutsideBush)
     {
         PlayerPC->Client_UpdateCharacterVisibility(OutsidePlayer, false); // Hiện
-        UE_LOG(LogTemp, Verbose, TEXT("SERVER: Player %s CAN SEE outside player %s"), 
+        UE_LOG(LogTemp, Warning, TEXT("PSERVER: Player %s CAN SEE outside player %s"), 
                *AffectedPlayer->GetName(), *OutsidePlayer->GetName());
     }
     
@@ -170,7 +170,7 @@ void ABushGameMode::UpdateVisibilityForPlayerExitBush(ABushCharacter* AffectedPl
     for (ABushCharacter* BushPlayer : PlayersInBushes)
     {
         PlayerPC->Client_UpdateCharacterVisibility(BushPlayer, true); // Ẩn
-        UE_LOG(LogTemp, Verbose, TEXT("SERVER: Player %s CANNOT SEE bush player %s"), 
+        UE_LOG(LogTemp, Warning, TEXT("PSERVER: Player %s CANNOT SEE bush player %s"), 
                *AffectedPlayer->GetName(), *BushPlayer->GetName());
     }
     
@@ -181,7 +181,7 @@ void ABushGameMode::UpdateVisibilityForPlayerExitBush(ABushCharacter* AffectedPl
         if (ABushPlayerController* OtherPC = Cast<ABushPlayerController>(OtherPlayer->GetController()))
         {
             OtherPC->Client_UpdateCharacterVisibility(AffectedPlayer, false); // Hiện
-            UE_LOG(LogTemp, Verbose, TEXT("SERVER: Outside player %s CAN SEE Player %s"), 
+            UE_LOG(LogTemp, Warning, TEXT("PSERVER: Outside player %s CAN SEE Player %s"), 
                    *OtherPlayer->GetName(), *AffectedPlayer->GetName());
         }
     }
@@ -191,13 +191,48 @@ void ABushGameMode::UpdateVisibilityForPlayerExitBush(ABushCharacter* AffectedPl
         if (ABushPlayerController* OtherPC = Cast<ABushPlayerController>(BushPlayer->GetController()))
         {
             OtherPC->Client_UpdateCharacterVisibility(AffectedPlayer, false); // Hiện
-            UE_LOG(LogTemp, Verbose, TEXT("SERVER: Bush player %s CAN SEE Player %s"), 
+            UE_LOG(LogTemp, Warning, TEXT("PSERVER: Bush player %s CAN SEE Player %s"), 
                    *BushPlayer->GetName(), *AffectedPlayer->GetName());
         }
     }
     
-    UE_LOG(LogTemp, Warning, TEXT("SERVER: Visibility update complete for player exiting bush"));
+    UE_LOG(LogTemp, Warning, TEXT("PSERVER: Visibility update complete for player exiting bush"));
 }
+
+void ABushGameMode::HandlePlayerEnteredBush(ABushCharacter* AffectedPlayer, ABushVolume* AffectedBush)
+{
+	if (!AffectedPlayer || !AffectedBush) 
+	{
+		UE_LOG(LogTemp, Error, TEXT("SERVER: HandlePlayerEnteredBush received null parameters!"));
+		return;
+	}
+    
+	// Thêm Character vào danh sách trong bụi cỏ
+	AffectedBush->AddPlayerToBush(AffectedPlayer);
+
+	// Update player's current bush
+	AffectedPlayer->SetCurrentBush(AffectedBush);
+    
+	// Cập nhật visibility
+	UpdateVisibilityForPlayerEnterBush(AffectedPlayer, AffectedBush);
+}
+
+void ABushGameMode::HandlePlayerExitedBush(ABushCharacter* AffectedPlayer, ABushVolume* AffectedBush)
+{
+	if (!AffectedPlayer || !AffectedBush) return;
+
+	// Xóa Character khỏi danh sách trong bụi cỏ
+	AffectedBush->RemovePlayerFromBush(AffectedPlayer);
+
+	// Clear player's current bush if it's this bush
+	if (AffectedPlayer->GetCurrentBush() == AffectedBush)
+	{
+		AffectedPlayer->SetCurrentBush(nullptr);
+	}
+
+	UpdateVisibilityForPlayerExitBush(AffectedPlayer);
+}
+
 
 bool ABushGameMode::CanPlayersSeeEachOther(ABushCharacter* Viewer, ABushCharacter* Target) const
 {
