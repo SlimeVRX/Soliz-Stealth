@@ -29,6 +29,7 @@ ABushVolume::ABushVolume()
 	// Set specific collision responses if needed (e.g., ignore everything but overlap with Pawn)
 	CollisionBox->SetCollisionResponseToAllChannels(ECR_Ignore); // Ignore everything by default
 	CollisionBox->SetCollisionResponseToChannel(ECC_Pawn, ECR_Overlap); // Overlap with Pawns (Characters)
+	CollisionBox->SetBoxExtent(FVector(100.0f, 100.0f, 100.0f));
 }
 
 // Called when the game starts or when spawned
