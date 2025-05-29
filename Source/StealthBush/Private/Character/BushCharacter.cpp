@@ -2,9 +2,8 @@
 
 
 #include "Character/BushCharacter.h"
-#include "Player/BushPlayerState.h"
 #include "Components/CapsuleComponent.h"
-#include "Net/UnrealNetwork.h"
+#include "Actor/BushVolume.h"
 
 // Sets default values
 ABushCharacter::ABushCharacter()
@@ -18,24 +17,25 @@ ABushCharacter::ABushCharacter()
 	// Cấu hình Capsule Component để phát hiện overlap với BushActor
 	GetCapsuleComponent()->SetCollisionResponseToChannel(ECC_WorldDynamic, ECR_Overlap);
 
+	// Initialize
+	CurrentBush = nullptr;
 }
 
-bool ABushCharacter::IsInBush() const
+void ABushCharacter::SetCurrentBush(ABushVolume* NewBush)
 {
-	if (ABushPlayerState* BushPS = GetPlayerState<ABushPlayerState>())
+	if (!HasAuthority()) return;
+    
+	// Only update if changed
+	if (CurrentBush != NewBush)
 	{
-		return BushPS->GetCurrentBushID() != -1;
+		ABushVolume* OldBush = CurrentBush;
+		CurrentBush = NewBush;
+        
+		UE_LOG(LogTemp, Log, TEXT("Server: Player %s bush changed from %s to %s"), 
+			   *GetName(), 
+			   OldBush ? *OldBush->GetName() : TEXT("None"),
+			   CurrentBush ? *CurrentBush->GetName() : TEXT("None"));
 	}
-	return false;
-}
-
-int32 ABushCharacter::GetCurrentBushID() const
-{
-	if (ABushPlayerState* BushPS = GetPlayerState<ABushPlayerState>())
-	{
-		return BushPS->GetCurrentBushID();
-	}
-	return -1;
 }
 
 // Called when the game starts or when spawned

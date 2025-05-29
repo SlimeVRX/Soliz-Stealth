@@ -3,8 +3,9 @@
 
 #include "GameMode/BushGameMode.h"
 #include "Character/BushCharacter.h"
-#include "Player/BushPlayerState.h"
 #include "Player/BushPlayerController.h"
+#include "Actor/BushVolume.h"
+#include "Kismet/GameplayStatics.h"
 
 ABushGameMode::ABushGameMode()
 {
@@ -12,117 +13,136 @@ ABushGameMode::ABushGameMode()
 	bReplicates = false;
 }
 
-void ABushGameMode::HandlePlayerEnterBush(ABushCharacter* Player, int32 BushID)
-{
-	if (!HasAuthority() || !Player) return;
-    
-	// Update server state
-	if (ABushPlayerState* PlayerState = Player->GetPlayerState<ABushPlayerState>())
-	{
-		PlayerState->SetCurrentBushID(BushID);
-	}
-    
-	// Add to bush tracking
-	PlayersInBushMap.FindOrAdd(BushID).Players.Add(Player);
-    
-	// Recalculate visibility for affected bush
-	CalculateAndUpdateVisibility(BushID);
-    
-	UE_LOG(LogTemp, Log, TEXT("Server: Player %s entered Bush %d"), 
-		   *Player->GetName(), BushID);
-}
-
-void ABushGameMode::HandlePlayerExitBush(ABushCharacter* Player, int32 BushID)
-{
-	if (!HasAuthority() || !Player) return;
-    
-	// Update server state
-	if (ABushPlayerState* PlayerState = Player->GetPlayerState<ABushPlayerState>())
-	{
-		PlayerState->SetCurrentBushID(-1); // -1 = not in any bush
-	}
-    
-	// Remove from bush tracking
-	if (PlayersInBushMap.Contains(BushID))
-	{
-		PlayersInBushMap[BushID].Players.Remove(Player);
-	}
-    
-	// Recalculate visibility for affected bush
-	CalculateAndUpdateVisibility(BushID);
-    
-	UE_LOG(LogTemp, Log, TEXT("Server: Player %s exited Bush %d"), 
-		   *Player->GetName(), BushID);
-}
-
-void ABushGameMode::RegisterBushVolume(ABushVolume* BushVolume, int32 BushID)
+void ABushGameMode::RegisterBushVolume(ABushVolume* BushVolume)
 {
 	if (!HasAuthority() || !BushVolume) return;
     
-	BushVolumeMap.Add(BushID, BushVolume);
-	UE_LOG(LogTemp, Log, TEXT("Server: Registered Bush Volume %d"), BushID);
+	BushVolumes.AddUnique(BushVolume);
+	UE_LOG(LogTemp, Log, TEXT("Server: Registered Bush Volume %s"), *BushVolume->GetName());
 }
 
-void ABushGameMode::CalculateAndUpdateVisibility(int32 AffectedBushID)
+void ABushGameMode::CalculateAndUpdateVisibilityForBush(ABushVolume* AffectedBush)
 {
-	if (!HasAuthority()) return;
+	if (!HasAuthority() || !AffectedBush) return;
     
-	// Iterate through all player controllers
-	for (FConstPlayerControllerIterator It = GetWorld()->GetPlayerControllerIterator(); It; ++It)
+	UE_LOG(LogTemp, Warning, TEXT("SERVER: Recalculating visibility for affected Bush: %s"), *AffectedBush->GetName());
+    
+	// Get players in this bush
+	const TSet<ABushCharacter*>& PlayersInBush = AffectedBush->GetPlayersInBush();
+    
+	// Get all players in the game
+	TArray<AActor*> AllPlayers;
+	UGameplayStatics::GetAllActorsOfClass(GetWorld(), ABushCharacter::StaticClass(), AllPlayers);
+    
+	// For each player in this bush, update visibility with all other players
+	for (ABushCharacter* PlayerInBush : PlayersInBush)
 	{
-		if (ABushPlayerController* PC = Cast<ABushPlayerController>(*It))
+		// Update visibility for this player
+		CalculateAndUpdateVisibilityForPlayer(PlayerInBush);
+	}
+    
+	// For each player not in this bush, update visibility with players in this bush
+	for (AActor* OtherActor : AllPlayers)
+	{
+		ABushCharacter* OtherPlayer = Cast<ABushCharacter>(OtherActor);
+		if (!OtherPlayer || PlayersInBush.Contains(OtherPlayer)) continue;
+        
+		// Update visibility for this player with all players in the bush
+		for (ABushCharacter* PlayerInBush : PlayersInBush)
 		{
-			if (ABushCharacter* ViewerChar = Cast<ABushCharacter>(PC->GetPawn()))
-			{
-				ABushPlayerState* ViewerState = ViewerChar->GetPlayerState<ABushPlayerState>();
-				if (!ViewerState) continue;
-                
-				// Check visibility for all other players
-				for (FConstPlayerControllerIterator It2 = GetWorld()->GetPlayerControllerIterator(); It2; ++It2)
-				{
-					if (ABushPlayerController* OtherPC = Cast<ABushPlayerController>(*It2))
-					{
-						if (ABushCharacter* OtherChar = Cast<ABushCharacter>(OtherPC->GetPawn()))
-						{
-							if (OtherChar != ViewerChar)
-							{
-								ABushPlayerState* OtherState = OtherChar->GetPlayerState<ABushPlayerState>();
-								if (!OtherState) continue;
-                                
-								bool bShouldHide = !CanPlayersSeeEachOther(ViewerState, OtherState);
-                                
-								// Send to specific client
-								PC->Client_UpdateCharacterVisibility(OtherChar, bShouldHide);
-							}
-						}
-					}
-				}
-			}
+			UpdateVisibilityBetweenPlayers(OtherPlayer, PlayerInBush);
+			UpdateVisibilityBetweenPlayers(PlayerInBush, OtherPlayer);
 		}
+	}
+    
+	UE_LOG(LogTemp, Warning, TEXT("SERVER: Visibility recalculation complete"));
+}
+
+void ABushGameMode::CalculateAndUpdateVisibilityForPlayer(ABushCharacter* AffectedPlayer)
+{
+	if (!HasAuthority() || !AffectedPlayer) return;
+    
+	// Get all players in the game
+	TArray<AActor*> AllPlayers;
+	UGameplayStatics::GetAllActorsOfClass(GetWorld(), ABushCharacter::StaticClass(), AllPlayers);
+    
+	// Update visibility between this player and all other players
+	for (AActor* OtherActor : AllPlayers)
+	{
+		ABushCharacter* OtherPlayer = Cast<ABushCharacter>(OtherActor);
+		if (!OtherPlayer || OtherPlayer == AffectedPlayer) continue;
+
+		// Update visibility in BOTH directions
+		// 1. Can AffectedPlayer see OtherPlayer?
+		UpdateVisibilityBetweenPlayers(AffectedPlayer, OtherPlayer);
+
+		// 2. Can OtherPlayer see AffectedPlayer?
+		UpdateVisibilityBetweenPlayers(OtherPlayer, AffectedPlayer);
 	}
 }
 
-bool ABushGameMode::CanPlayersSeeEachOther(class ABushPlayerState* Viewer, class ABushPlayerState* Target) const
+bool ABushGameMode::CanPlayersSeeEachOther(ABushCharacter* Viewer, ABushCharacter* Target) const
 {
-	if (!Viewer || !Target) return true;
+	if (!Viewer || !Target) 
+	{
+		UE_LOG(LogTemp, Error, TEXT("SERVER: Invalid Character in visibility check"));
+		return true;
+	}
     
-	int32 ViewerBushID = Viewer->GetCurrentBushID();
-	int32 TargetBushID = Target->GetCurrentBushID();
+	ABushVolume* ViewerBush = Viewer->GetCurrentBush();
+	ABushVolume* TargetBush = Target->GetCurrentBush();
     
 	// Both outside bushes = can see
-	if (ViewerBushID == -1 && TargetBushID == -1) return true;
+	if (!ViewerBush && !TargetBush) 
+	{
+		UE_LOG(LogTemp, Verbose, TEXT("SERVER: Visibility Rule - Both outside bushes = CAN SEE"));
+		return true;
+	}
     
 	// Same bush = can see
-	if (ViewerBushID == TargetBushID && ViewerBushID != -1) return true;
+	if (ViewerBush && TargetBush && ViewerBush == TargetBush) 
+	{
+		UE_LOG(LogTemp, Verbose, TEXT("SERVER: Visibility Rule - Same bush = CAN SEE"));
+		return true;
+	}
     
 	// Target in bush, viewer outside = cannot see
-	if (ViewerBushID == -1 && TargetBushID != -1) return false;
+	if (!ViewerBush && TargetBush) 
+	{
+		UE_LOG(LogTemp, Verbose, TEXT("SERVER: Visibility Rule - Target in bush, viewer outside = CANNOT SEE"));
+		return false;
+	}
     
 	// Viewer in bush, target outside = can see
-	if (ViewerBushID != -1 && TargetBushID == -1) return true;
+	if (ViewerBush && !TargetBush) 
+	{
+		UE_LOG(LogTemp, Verbose, TEXT("SERVER: Visibility Rule - Viewer in bush, target outside = CAN SEE"));
+		return true;
+	}
     
 	// Different bushes = cannot see
+	UE_LOG(LogTemp, Verbose, TEXT("SERVER: Visibility Rule - Different bushes = CANNOT SEE"));
 	return false;
 }
+
+void ABushGameMode::UpdateVisibilityBetweenPlayers(ABushCharacter* Viewer, ABushCharacter* Target)
+{
+	if (!HasAuthority() || !Viewer || !Target || Viewer == Target) return;
+    
+	// Apply visibility rules
+	bool bCanSee = CanPlayersSeeEachOther(Viewer, Target);
+    
+	// Update visibility on viewer's client
+	if (ABushPlayerController* PC = Cast<ABushPlayerController>(Viewer->GetController()))
+	{
+		PC->Client_UpdateCharacterVisibility(Target, !bCanSee);
+        
+		UE_LOG(LogTemp, Log, TEXT("SERVER: Visibility check - Viewer: %s -> Target: %s = %s"), 
+			   *Viewer->GetName(),
+			   *Target->GetName(),
+			   bCanSee ? TEXT("VISIBLE") : TEXT("HIDDEN"));
+	}
+}
+
 
 

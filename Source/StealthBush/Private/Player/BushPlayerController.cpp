@@ -7,20 +7,16 @@ void ABushPlayerController::Client_UpdateCharacterVisibility_Implementation(
     ABushCharacter* TargetCharacter,
     bool bShouldHide)
 {
-    if (TargetCharacter)
-    {
-        TargetCharacter->SetActorHiddenInGame(bShouldHide);
-        
-        UE_LOG(LogTemp, Log, TEXT("Client: %s character %s"), 
-               bShouldHide ? TEXT("Hiding") : TEXT("Showing"), 
-               *TargetCharacter->GetName());
-    }
-}
-
-void ABushPlayerController::Client_UpdateBushStatus_Implementation(int32 NewBushID)
-{
-    // Call blueprint event for UI updates
-    OnBushStatusChanged(NewBushID);
+    if (!TargetCharacter) return;
     
-    UE_LOG(LogTemp, Log, TEXT("Client: Bush status updated to %d"), NewBushID);
+    // Log only when visibility state changes to avoid spam
+    bool bCurrentlyHidden = TargetCharacter->IsHidden();
+    if (bCurrentlyHidden != bShouldHide)
+    {
+        UE_LOG(LogTemp, Log, TEXT("CLIENT %s: Updating visibility for %s to %s"), 
+               *GetName(), *TargetCharacter->GetName(), bShouldHide ? TEXT("HIDDEN") : TEXT("VISIBLE"));
+    }
+    
+    // Update visibility state
+    TargetCharacter->SetActorHiddenInGame(bShouldHide);
 }

@@ -17,15 +17,24 @@ class STEALTHBUSH_API ABushCharacter : public ACharacter
 public:
 	// Sets default values for this character's properties
 	ABushCharacter();
-
+	
 	// Getters
 	UFUNCTION(BlueprintPure, Category = "Bush System")
-	bool IsInBush() const;
-    
+	bool IsInBush() const { return CurrentBush != nullptr; }
+	
 	UFUNCTION(BlueprintPure, Category = "Bush System")
-	int32 GetCurrentBushID() const;
+	ABushVolume* GetCurrentBush() const { return CurrentBush; }
+
+	// Setters (Server only)
+	void SetCurrentBush(ABushVolume* NewBush);
+
+	
 
 protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
+
+	// Current bush this character is in (server-only)
+	UPROPERTY()
+	ABushVolume* CurrentBush;
 };

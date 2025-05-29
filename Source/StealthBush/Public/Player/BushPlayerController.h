@@ -20,13 +20,4 @@ public:
     // Client RPC - Server sends visibility commands
     UFUNCTION(Client, Reliable)
     void Client_UpdateCharacterVisibility(ABushCharacter* TargetCharacter, bool bShouldHide);
-    
-    // Client RPC - Update UI bush status
-    UFUNCTION(Client, Reliable)
-    void Client_UpdateBushStatus(int32 NewBushID);
-
-protected:
-    // Called when the bush status changes on client
-    UFUNCTION(BlueprintImplementableEvent, Category = "Bush System")
-    void OnBushStatusChanged(int32 NewBushID);
 };

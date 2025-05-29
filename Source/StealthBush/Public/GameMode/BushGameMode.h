@@ -9,15 +9,6 @@
 class ABushCharacter;
 class ABushVolume;
 
-USTRUCT()
-struct FBushPlayerSet
-{
-	GENERATED_BODY()
-    
-	UPROPERTY()
-	TSet<ABushCharacter*> Players;
-};
-
 /**
  * 
  */
@@ -28,29 +19,22 @@ class STEALTHBUSH_API ABushGameMode : public AGameModeBase
 
 public:
 	ABushGameMode();
-
+    
 	// Bush system management
-	UFUNCTION()
-	void HandlePlayerEnterBush(ABushCharacter* Player, int32 BushID);
-    
-	UFUNCTION()
-	void HandlePlayerExitBush(ABushCharacter* Player, int32 BushID);
-    
-	UFUNCTION()
-	void RegisterBushVolume(ABushVolume* BushVolume, int32 BushID);
+	void RegisterBushVolume(ABushVolume* BushVolume);
+
+	// Visibility calculation
+	void CalculateAndUpdateVisibilityForBush(ABushVolume* AffectedBush);
+	void CalculateAndUpdateVisibilityForPlayer(ABushCharacter* AffectedPlayer);
 	
 private:
-	// Map quản lý tất cả bushes
+	// Collection of all bush volumes
 	UPROPERTY()
-	TMap<int32, ABushVolume*> BushVolumeMap;
-    
-	// Map tracking players trong từng bush
-	UPROPERTY()
-	TMap<int32, FBushPlayerSet> PlayersInBushMap;
-    
-	// Server visibility calculation
-	void CalculateAndUpdateVisibility(int32 AffectedBushID);
+	TArray<ABushVolume*> BushVolumes;
     
 	// Visibility rules
-	bool CanPlayersSeeEachOther(class ABushPlayerState* Viewer, class ABushPlayerState* Target) const;
+	bool CanPlayersSeeEachOther(ABushCharacter* Viewer, ABushCharacter* Target) const;
+    
+	// Helper to update visibility between two players
+	void UpdateVisibilityBetweenPlayers(ABushCharacter* Viewer, ABushCharacter* Target);
 };
