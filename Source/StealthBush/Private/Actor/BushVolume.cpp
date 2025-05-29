@@ -77,7 +77,7 @@ void ABushVolume::OnOverlapBegin(UPrimitiveComponent* OverlappedComp, AActor* Ot
 		// Notify GameMode to recalculate visibility for this bush
 		if (ABushGameMode* GameMode = GetWorld()->GetAuthGameMode<ABushGameMode>())
 		{
-			GameMode->CalculateAndUpdateVisibilityForBush(this);
+			GameMode->UpdateVisibilityForPlayerEnterBush(BushChar, this);
 		}
         
 		UE_LOG(LogTemp, Log, TEXT("Server: Player %s entered Bush %s"), 
@@ -106,11 +106,7 @@ void ABushVolume::OnOverlapEnd(UPrimitiveComponent* OverlappedComp, AActor* Othe
 		// Notify GameMode to recalculate visibility for this bush
 		if (ABushGameMode* GameMode = GetWorld()->GetAuthGameMode<ABushGameMode>())
 		{
-			// First update visibility for the bush (for players still in the bush)
-			GameMode->CalculateAndUpdateVisibilityForBush(this);
-
-			// Then update visibility specifically for the player who exited
-			GameMode->CalculateAndUpdateVisibilityForPlayer(BushChar);
+			GameMode->UpdateVisibilityForPlayerExitBush(BushChar);
 		}
         
 		UE_LOG(LogTemp, Log, TEXT("Server: Player %s exited Bush %s"), 

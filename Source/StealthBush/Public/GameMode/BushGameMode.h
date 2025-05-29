@@ -24,8 +24,8 @@ public:
 	void RegisterBushVolume(ABushVolume* BushVolume);
 
 	// Visibility calculation
-	void CalculateAndUpdateVisibilityForBush(ABushVolume* AffectedBush);
-	void CalculateAndUpdateVisibilityForPlayer(ABushCharacter* AffectedPlayer);
+	auto UpdateVisibilityForPlayerEnterBush(ABushCharacter* AffectedPlayer, ABushVolume* AffectedBush) -> void;
+	void UpdateVisibilityForPlayerExitBush(ABushCharacter* AffectedPlayer);
 	
 private:
 	// Collection of all bush volumes
